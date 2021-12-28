@@ -1,8 +1,18 @@
 Vanilla javascript game inspired by plants vs zombies using javascript 
 and HTML canvas
 
+Game runs from live server
+
 The game is called tower defense and is part of a youtube tutorial by frank
 from the frankslaboratory youtube channel
 
 Day 1:
 Initialized project and worked on defender placement
+
+23 Dec:
+Started working on the attackers/enemies
+
+24 Dec:
+Started working on the projectiles/lasers
+
+

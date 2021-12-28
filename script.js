@@ -14,6 +14,8 @@ let frame = 0;
 const enemyPositions = [];
 let enemiesInterval = 600;
 let gameOver = false;
+const projectiles = [];
+let score = 0;
 
 // mouse
 const mouse = {
@@ -70,13 +72,54 @@ function handleGameGrid() { // Cycling through the array and drawing each indivi
     }
 }
 // projectiles
+class Projectile {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.width = 10;
+        this.height = 10;
+        this.power = 20;
+        this.speed = 5;
+
+    }
+
+    update() {
+        this.x += this.speed;
+    }
+
+    draw() {
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.width, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+function handleProjectiles() {
+    for (let i = 0; i < projectiles.length; i++) {
+        projectiles[i].update();
+        projectiles[i].draw();
+
+        for (let j = 0; j < enemies.length; j++) {
+            if (enemies[j] && projectiles[i] && collision(projectiles[i], enemies[j])) {
+                enemies[j].health -= projectiles[i].power
+                projectiles.splice(i, 1);
+                i--;
+            }
+        }
+
+        if (projectiles[i] && projectiles[i].x > canvas.width - cellSize) {
+            projectiles.splice(i, 1);
+            i--;
+        }
+    }
+}
 // defenders
 class Defender {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.width = cellSize;
-        this.height = cellSize;
+        this.width = cellSize - cellGap * 2;
+        this.height = cellSize - cellGap * 2;
         this.shooting = false;
         this.health = 100;
         this.projectiles = [];
@@ -89,11 +132,22 @@ class Defender {
         ctx.font = '30px Orbitron';
         ctx.fillText(Math.floor(this.health), this.x + 15, this.y + 30);
     }
+    update() {
+        if (this.shooting) {
+            this.timer++;
+            if (this.timer % 100 === 0) {
+                projectiles.push(new Projectile(this.x + 70, this.y + 50));
+            }
+        } else {
+            this.timer = 0;
+        }
+
+    }
 }
 
 canvas.addEventListener('click', function () {
-    const gridPositionX = mouse.x - (mouse.x % cellSize);
-    const gridPositionY = mouse.y - (mouse.y % cellSize);
+    const gridPositionX = mouse.x - (mouse.x % cellSize) + cellGap;
+    const gridPositionY = mouse.y - (mouse.y % cellSize) + cellGap;
     if (gridPositionY < cellSize) return; // If someone clicks on the menubar
     for (let i = 0; i < defenders.length; i++) { // Check if there is a defender already
         if (defenders[i].x === gridPositionX && defenders[i].y === gridPositionY)
@@ -109,12 +163,18 @@ canvas.addEventListener('click', function () {
 function handleDefenders() {
     for (let i = 0; i < defenders.length; i++) {
         defenders[i].draw();
+        defenders[i].update();
+        if (enemyPositions.indexOf(defenders[i].y) !== -1) {
+            defenders[i].shooting = true;
+        } //else {
+        //     defenders[i].shooting = false;
+        // }
         for (let j = 0; j < enemies.length; j++) {
-            if (collision(defenders[i], enemies[j])) {
+            if (defenders[i] && collision(defenders[i], enemies[j])) {
                 enemies[j].movement = 0;
                 defenders[i].health -= 0.2;
             }
-            if (defender[i] && defenders[i].health <= 0) {
+            if (defenders[i] && defenders[i].health <= 0) {
                 defenders.splice(i, 1);
                 i--;
                 enemies[j].movement = enemies[j].speed;
@@ -152,6 +212,15 @@ function handleEnemies() {
         if (enemies[i].x < 0) {
             gameOver = true;
         }
+        if (enemies[i].health <= 0) {
+            let gainedResources = enemies[i].maxHealth / 10;
+            numberOfResources += gainedResources;
+            score += gainedResources;
+            const findThisIndex = enemyPositions.indexOf(enemies[i].y);
+            enemyPositions.splice(findThisIndex, 1);
+            enemies.splice(i, 1);
+            i--;
+        }
     }
     if (frame % enemiesInterval === 0) {
         let verticalPosition = Math.floor(Math.random() * 5 + 1) * cellSize;
@@ -166,7 +235,8 @@ function handleEnemies() {
 function handleGameStatus() {
     ctx.fillStyle = 'gold';
     ctx.font = '30px Orbitron';
-    ctx.fillText('Resources: ' + numberOfResources, 20, 55);
+    ctx.fillText('Resources: ' + numberOfResources, 20, 80);
+    ctx.fillText('Score: ' + score, 20, 40)
     if (gameOver) {
         ctx.fillStyle = 'black';
         ctx.font = '90px Orbitron';
@@ -180,6 +250,7 @@ function animate() { //Game loop. Draws and redraws game to mimic movement (recu
     ctx.fillRect(0, 0, controlsBar.width, controlsBar.height);
     handleGameGrid();
     handleDefenders();
+    handleProjectiles();
     handleEnemies();
     handleGameStatus();
     frame++;

@@ -16,4 +16,8 @@ Started working on the attackers/enemies
 Started working on the projectiles/lasers
 
 28 Dec:
+Ran into some issues with projectiles and lasers
 
+6 Jan: 
+Tracked the projectiles issue back to handleEnemies()
+look into enemyPositions for some reason they not tracked being tracked
